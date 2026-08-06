@@ -1,0 +1,11 @@
+{
+    "extends": "@kiko/tsconfig/node.json",
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "dist",
+        // Nest's DI decorators legitimately leave constructor params unread.
+        "noUnusedLocals": false
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,11 @@
+{
+    "extends": "@kiko/tsconfig/react.json",
+    "compilerOptions": {
+        // No baseUrl needed: since TS 4.4 paths resolve relative to this file.
+        // Mirrored by the `@` alias in vite.config.ts.
+        "paths": {
+            "@/*": ["./src/*"]
+        }
+    },
+    "include": ["src", "vite.config.ts"]
+}

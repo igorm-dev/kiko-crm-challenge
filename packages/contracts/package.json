@@ -1,0 +1,37 @@
+{
+    "name": "@kiko/contracts",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "zod": "^3.24.1"
+    },
+    "devDependencies": {
+        "@kiko/tsconfig": "workspace:*",
+        "tsup": "^8.3.5",
+        "typescript": "^5.7.3"
+    }
+}

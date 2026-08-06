@@ -1,0 +1,10 @@
+{
+    "extends": "@kiko/tsconfig/base.json",
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "dist"
+    },
+    // tsup.config.ts stays out: it lives outside rootDir and tsup type-checks
+    // nothing at build time anyway.
+    "include": ["src/**/*.ts"]
+}

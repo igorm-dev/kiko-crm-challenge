@@ -8,9 +8,9 @@
         "start": "node dist/main",
         "typecheck": "tsc --noEmit",
         "test": "jest --passWithNoTests",
-        "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
-        "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
-        "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
+        "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/infra/database/data-source.ts",
+        "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infra/database/data-source.ts",
+        "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infra/database/data-source.ts"
     },
     "dependencies": {
         "@kiko/contracts": "workspace:*",

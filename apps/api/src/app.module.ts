@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { validateEnv, type Env } from './config/env';
-import { buildDataSourceOptions } from './database/data-source';
-import { HealthModule } from './health/health.module';
+import { validateEnv, type Env } from './infra/config/env';
+import { buildDataSourceOptions } from './infra/database/data-source';
+import { HealthModule } from './infra/health/health.module';
+import { CommentsModule } from './modules/comments/comments.module';
+import { DealsModule } from './modules/deals/deals.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
     imports: [
@@ -17,6 +21,10 @@ import { HealthModule } from './health/health.module';
                 buildDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
         }),
         HealthModule,
+        UsersModule,
+        LeadsModule,
+        DealsModule,
+        CommentsModule,
     ],
 })
 export class AppModule {}

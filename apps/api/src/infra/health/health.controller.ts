@@ -2,7 +2,9 @@ import { Controller, Get } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { HealthSchema, type Health } from '@kiko/contracts';
+import { Public } from '../../modules/auth/decorators/public.decorator';
 
+@Public()
 @Controller('health')
 export class HealthController {
     constructor(
@@ -21,7 +23,6 @@ export class HealthController {
             database = 'down';
         }
 
-        // Parsing on the way out keeps the response honest against the contract.
         return HealthSchema.parse({
             status: 'ok',
             database,

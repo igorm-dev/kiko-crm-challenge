@@ -1,6 +1,9 @@
 import type { ZodSchema } from 'zod';
+import { clearToken, getToken } from '@/lib/auth-storage';
 
 const BASE_URL = '/api';
+
+export const UNAUTHORIZED_EVENT = 'kiko:unauthorized';
 
 export class ApiError extends Error {
     constructor(
@@ -12,26 +15,30 @@ export class ApiError extends Error {
     }
 }
 
-/**
- * Parses every response through the same Zod schema the API validates with.
- * If the contract drifts, this throws here instead of producing `undefined`
- * three components deep.
- */
 export async function apiFetch<T>(
     path: string,
     schema: ZodSchema<T>,
     init?: RequestInit,
 ): Promise<T> {
+    const token = getToken();
+
     const response = await fetch(`${BASE_URL}${path}`, {
         ...init,
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...init?.headers,
         },
     });
 
     if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { message?: string } | null;
+
+        if (response.status === 401 && token) {
+            clearToken();
+            window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+        }
+
         throw new ApiError(body?.message ?? response.statusText, response.status);
     }
 

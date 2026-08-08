@@ -1,16 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { LoginSchema } from '@kiko/contracts';
+import { FullPageLoader } from '@/components/FullPageLoader';
 import { KikosLogo } from '@/components/KikosLogo';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useAuth } from '@/hooks/useAuth';
-import { LoginSchema } from '@/schemas/auth.schema';
 import { ROUTES } from '@/routes/paths';
 
 type FieldErrors = Partial<Record<'email' | 'password', string>>;
 
 export function LoginPage() {
-    const { isAuthenticated, signIn } = useAuth();
+    const { isAuthenticated, isLoading, signIn } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -20,8 +21,11 @@ export function LoginPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Where the user was headed before RequireAuth bounced them here.
     const from = (location.state as { from?: string } | null)?.from ?? ROUTES.home;
+
+    if (isLoading) {
+        return <FullPageLoader />;
+    }
 
     if (isAuthenticated) {
         return <Navigate to={from} replace />;
@@ -114,7 +118,7 @@ export function LoginPage() {
                         </Link>
                     </div>
 
-                    <Button type="submit" loading={isSubmitting} className="mt-6 cursor-pointer">
+                    <Button type="submit" loading={isSubmitting} className="mt-6">
                         {isSubmitting ? 'Entrando…' : 'Entrar no CRM'}
                     </Button>
                 </form>

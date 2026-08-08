@@ -4,7 +4,7 @@ type Variant = 'primary' | 'secondary';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: Variant;
-    /** Renders a spinner and blocks clicks without changing the button width. */
+
     loading?: boolean;
     children: ReactNode;
 }
@@ -28,7 +28,7 @@ export function Button({
             {...props}
             disabled={disabled || loading}
             aria-busy={loading || undefined}
-            className={`flex h-12 w-full items-center justify-center gap-2.5 rounded-lg text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${className}`}
+            className={`flex h-12 w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${className}`}
         >
             {loading && <Spinner />}
             {children}

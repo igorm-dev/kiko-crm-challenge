@@ -1,14 +1,17 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { ROUTES } from './paths';
+import { FullPageLoader } from '@/components/FullPageLoader';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from './paths';
 
-/** Layout route: renders the app only for signed-in users. */
 export function RequireAuth() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
 
+    if (isLoading) {
+        return <FullPageLoader />;
+    }
+
     if (!isAuthenticated) {
-        // Carries the attempted path so login can send the user back to it.
         return <Navigate to={ROUTES.login} replace state={{ from: location.pathname }} />;
     }
 

@@ -1,12 +1,7 @@
 interface KikosLogoProps {
-    /** Tailwind text size that drives the whole lockup, e.g. "text-2xl". */
     className?: string;
 }
 
-/**
- * The wordmark: KIKOS with the first "I" rendered as a brand-colored bar,
- * plus a small "CRM" suffix. Scales with whatever font size is applied.
- */
 export function KikosLogo({ className = 'text-4xl' }: KikosLogoProps) {
     return (
         <span

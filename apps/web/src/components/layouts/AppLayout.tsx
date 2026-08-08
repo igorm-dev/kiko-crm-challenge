@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom';
 import { KikosLogo } from '@/components/KikosLogo';
 import { useAuth } from '@/hooks/useAuth';
 
-/** Chrome shared by every authenticated screen. */
 export function AppLayout() {
     const { user, signOut } = useAuth();
 
@@ -16,7 +15,7 @@ export function AppLayout() {
                     <button
                         type="button"
                         onClick={signOut}
-                        className="text-neutral-500 underline underline-offset-4 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                        className="cursor-pointer text-neutral-500 underline underline-offset-4 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
                     >
                         Sair
                     </button>

@@ -1,10 +1,6 @@
 import { z } from 'zod';
+import { UserSchema } from './user';
 
-/**
- * Lives in the web app, not in `@kiko/contracts`, on purpose: there is no
- * `POST /api/auth/login` yet, so this is a form schema — not an API contract.
- * When the endpoint exists, this moves to `contracts` and both sides share it.
- */
 export const LoginSchema = z.object({
     email: z
         .string()
@@ -16,3 +12,10 @@ export const LoginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof LoginSchema>;
+
+export const LoginResponseSchema = z.object({
+    accessToken: z.string(),
+    user: UserSchema,
+});
+
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;

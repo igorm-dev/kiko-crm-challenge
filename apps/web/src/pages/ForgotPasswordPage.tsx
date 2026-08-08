@@ -2,10 +2,6 @@ import { Link } from 'react-router-dom';
 import { KikosLogo } from '@/components/KikosLogo';
 import { ROUTES } from '@/routes/paths';
 
-/**
- * Placeholder. Recovery needs an e-mail-sending endpoint, so the screen exists
- * only to keep the "Esqueceu sua senha?" link from dead-ending.
- */
 export function ForgotPasswordPage() {
     return (
         <main className="flex min-h-screen items-center justify-center bg-surface-base px-4 py-12">

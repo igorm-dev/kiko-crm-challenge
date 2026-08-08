@@ -1,23 +1,21 @@
-import type { AuthUser } from '@/types/auth';
+import { LoginResponseSchema, UserSchema, type User } from '@kiko/contracts';
+import { clearToken, setToken } from '@/lib/auth-storage';
+import { apiFetch, apiMutate } from './api';
 
-/**
- * Thrown while authentication has no backend. The message is user-facing —
- * the login form renders it as-is.
- */
-export class AuthNotImplementedError extends Error {
-    constructor() {
-        super('O login ainda não está disponível: a autenticação depende da API.');
-        this.name = 'AuthNotImplementedError';
-    }
+export async function login(email: string, password: string): Promise<User> {
+    const { accessToken, user } = await apiMutate('/auth/login', LoginResponseSchema, 'POST', {
+        email,
+        password,
+    });
+
+    setToken(accessToken);
+    return user;
 }
 
-/**
- * Everything that talks to the auth endpoints lives here, so swapping the stub
- * below for the real call touches this file only.
- */
-export async function login(_email: string, _password: string): Promise<AuthUser> {
-    // TODO: apiMutate('/auth/login', AuthUserSchema, 'POST', { email, password })
-    // Until that endpoint exists there is nothing to authenticate against,
-    // so this fails loudly instead of faking a session.
-    throw new AuthNotImplementedError();
+export function getMe(): Promise<User> {
+    return apiFetch('/auth/me', UserSchema);
+}
+
+export function logout(): void {
+    clearToken();
 }

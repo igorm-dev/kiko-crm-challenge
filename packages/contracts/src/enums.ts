@@ -19,7 +19,6 @@ export enum DealStatus {
     Lost = 'lost',
 }
 
-/** Human-readable labels for the UI. Values stay in English in the database. */
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
     [UserRole.Admin]: 'Administrador',
     [UserRole.Seller]: 'Vendedor',

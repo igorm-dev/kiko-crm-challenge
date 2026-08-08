@@ -5,11 +5,12 @@ export const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().url(),
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
+    JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
+    JWT_EXPIRES_IN: z.string().default('8h'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
 
-/** Fails loudly at boot rather than at the first query. */
 export function validateEnv(raw: Record<string, unknown>): Env {
     const result = EnvSchema.safeParse(raw);
 

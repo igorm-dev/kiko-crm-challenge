@@ -25,9 +25,10 @@ packages/
 
 `apps/` são coisas que rodam e fazem deploy. `packages/` são coisas consumidas.
 
-> **Estado atual:** apenas a infraestrutura do projeto. Ainda não há entidades de
-> domínio nem telas — elas serão adicionadas uma a uma. O que existe hoje é o
-> monorepo configurado, a API conectando no banco e uma tela inicial de status.
+> **Estado atual:** entidades de domínio modeladas e migrations aplicadas.
+> Autenticação e autorização completas no backend e já conectadas à tela de
+> login do frontend. As telas de leads, negócios e pipeline serão adicionadas
+> uma a uma.
 
 ## Por que um monorepo aqui
 
@@ -36,8 +37,8 @@ requests com o schema (`ZodValidationPipe`); o React deriva os tipos com `z.infe
 valida as respostas com o mesmo schema. Mudou o contrato, o build do frontend quebra —
 em vez de falhar em runtime.
 
-Hoje o único contrato é o `HealthSchema`, que existe justamente para provar essa
-integração de ponta a ponta antes da primeira entidade real.
+Hoje isso já vale para `UserSchema`, `LoginSchema` e `LoginResponseSchema`: o
+mesmo arquivo valida o corpo do `POST /auth/login` no Nest e a resposta no React.
 
 ## Pré-requisitos
 
@@ -85,12 +86,21 @@ para rodar localmente. As variáveis são validadas com Zod no boot da API
 (`apps/api/src/config/env.ts`), então um valor faltando falha imediatamente com
 mensagem clara, em vez de quebrar na primeira query.
 
-| Variável       | Padrão                                         | Descrição               |
-| -------------- | ---------------------------------------------- | ----------------------- |
-| `NODE_ENV`     | `development`                                  | ambiente de execução    |
-| `PORT`         | `3000`                                         | porta da API            |
-| `DATABASE_URL` | `postgres://kiko:kiko@localhost:5433/kiko_crm` | conexão do Postgres     |
-| `CORS_ORIGIN`  | `http://localhost:5173`                        | origem liberada no CORS |
+| Variável         | Padrão                                         | Descrição                    |
+| ---------------- | ---------------------------------------------- | ---------------------------- |
+| `NODE_ENV`       | `development`                                  | ambiente de execução         |
+| `PORT`           | `3000`                                         | porta da API                 |
+| `DATABASE_URL`   | `postgres://kiko:kiko@localhost:5433/kiko_crm` | conexão do Postgres          |
+| `CORS_ORIGIN`    | `http://localhost:5173`                        | origem liberada no CORS      |
+| `JWT_SECRET`     | — (obrigatório, ≥ 32 chars)                    | chave de assinatura do token |
+| `JWT_EXPIRES_IN` | `8h`                                           | validade do access token     |
+
+`JWT_SECRET` é a única sem padrão, de propósito: um segredo com valor de
+fallback é um segredo que todo mundo conhece. Gere o seu:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
 
 ### 3. Subir o banco
 
@@ -113,8 +123,7 @@ fato aceitando conexão — não apenas que o container existe.
 pnpm migration:run
 ```
 
-Como ainda não existem entidades, não há migrations a aplicar — este passo não faz
-nada por enquanto. Ele já está no lugar para quando a primeira entidade chegar.
+Cria as tabelas de `users`, `leads`, `deals` e `comments`.
 
 > `synchronize` está desligado de propósito: as migrations são a fonte de verdade do
 > schema, e o TypeORM nunca altera o banco sozinho. Ao adicionar uma entidade,
@@ -124,7 +133,16 @@ nada por enquanto. Ele já está no lugar para quando a primeira entidade chegar
 > pnpm migration:generate apps/api/src/database/migrations/NomeDaMigration
 > ```
 
-### 5. Rodar em desenvolvimento
+### 5. Criar os usuários iniciais
+
+```bash
+pnpm db:seed
+```
+
+Sem isso não há como logar — não existe cadastro público. Detalhes em
+[Autenticação e autorização](#autenticação-e-autorização).
+
+### 6. Rodar em desenvolvimento
 
 ```bash
 pnpm dev
@@ -169,7 +187,7 @@ ao menos uma vez: `pnpm --filter @kiko/contracts build`. O `pnpm dev` mantém is
 watch, mas em um clone novo o primeiro build ainda não aconteceu.
 
 **Resetar o banco do zero.** `docker compose down -v` apaga o volume; depois
-`pnpm db:up` e `pnpm migration:run`.
+`pnpm db:up`, `pnpm migration:run` e `pnpm db:seed`.
 
 ## Scripts (raiz)
 
@@ -183,14 +201,82 @@ watch, mas em um clone novo o primeiro build ainda não aconteceu.
 | `pnpm db:up` / `db:down`         | Postgres via Docker                            |
 | `pnpm migration:generate <path>` | gera migration a partir das entities           |
 | `pnpm migration:run`             | aplica migrations pendentes                    |
+| `pnpm db:seed`                   | cria os usuários iniciais (idempotente)        |
 
 Filtrar um pacote só: `pnpm --filter @kiko/api <script>`.
 Rodar apenas o que mudou vs. `main`: `pnpm --filter '...[origin/main]' test`.
 
 ## API
 
-| Método | Rota          | Descrição                              |
-| ------ | ------------- | -------------------------------------- |
-| `GET`  | `/api/health` | status da API e da conexão com o banco |
+| Método   | Rota              | Acesso      | Descrição                              |
+| -------- | ----------------- | ----------- | -------------------------------------- |
+| `GET`    | `/api/health`     | público     | status da API e da conexão com o banco |
+| `POST`   | `/api/auth/login` | público     | devolve `{ accessToken, user }`        |
+| `GET`    | `/api/auth/me`    | autenticado | usuário do token, relido do banco      |
+| `GET`    | `/api/users`      | autenticado | lista usuários (para atribuir leads)   |
+| `GET`    | `/api/users/:id`  | autenticado | detalhe de um usuário                  |
+| `POST`   | `/api/users`      | **admin**   | cadastra um usuário                    |
+| `PATCH`  | `/api/users/:id`  | **admin**   | atualiza dados ou senha                |
+| `DELETE` | `/api/users/:id`  | **admin**   | soft delete                            |
 
-Os endpoints de domínio serão adicionados conforme cada entidade for implementada.
+Os endpoints de leads, negócios e comentários serão adicionados conforme cada
+entidade for implementada.
+
+## Autenticação e autorização
+
+JWT assinado com HS256, enviado em `Authorization: Bearer <token>`. Só access
+token, com validade de 8h (`JWT_EXPIRES_IN`) — a jornada de trabalho de um
+vendedor. Sem refresh token: para um CRM interno, o custo de rotação e
+revogação não se paga.
+
+**Autenticar é o padrão.** O `JwtAuthGuard` é registrado como `APP_GUARD`, então
+toda rota nasce protegida e só é aberta com `@Public()`. Esquecer o decorator
+tranca a rota; o contrário exporia dados sem ninguém perceber.
+
+**Autorizar é a exceção.** O `RolesGuard` roda depois e só age em rotas com
+`@Roles(UserRole.Admin)`. Sem o decorator, qualquer usuário autenticado passa —
+autorização estreita a autenticação, não a substitui.
+
+Senhas são hasheadas com bcrypt (cost 12) e a coluna `password_hash` é
+`select: false` na entidade: nenhuma consulta a traz por acidente. O único
+caminho que a carrega é o login. As respostas ainda passam pelo `UserSchema`
+antes de sair, que descarta qualquer campo não declarado — duas barreiras
+independentes para o mesmo vazamento.
+
+Login errado sempre responde `401 E-mail ou senha incorretos.`, seja o e-mail
+inexistente ou a senha errada. Quando o e-mail não existe, o serviço compara
+contra um hash descartável em vez de retornar de imediato: sem isso, a diferença
+de tempo entregaria quais e-mails têm conta.
+
+### No frontend
+
+O token vai para o `localStorage` (`lib/auth-storage.ts`) e o
+`services/api.ts` o injeta em toda requisição — nenhum componente manipula
+token diretamente.
+
+**`/auth/me` é a fonte da verdade da sessão.** Um token guardado só prova que
+houve login em algum momento; a cada boot o app pergunta à API se ele ainda
+vale, e recebe o usuário como o banco o tem agora. Ler o JWT no cliente para
+extrair o usuário seria mais rápido e estaria errado na primeira vez que alguém
+mudasse de cargo ou de role.
+
+Por isso a sessão tem **três** estados, não dois: autenticado, não autenticado
+e _carregando_. Tratar "ainda não sei" como "não autenticado" mandaria o usuário
+para o login a cada F5.
+
+Quando a API responde 401 com um token em mãos, o `services/api.ts` descarta o
+token e emite o evento `kiko:unauthorized`. Ele não navega porque não conhece o
+router — quem escuta é o `AuthProvider`, que encerra a sessão. É o que cobre o
+token expirando no meio do expediente.
+
+### Usuários iniciais
+
+```bash
+pnpm db:seed
+```
+
+Cria os usuários listados em `apps/api/src/infra/database/seeds/data/users.seed.ts`
+— nome, e-mail, senha e papel, tudo num arquivo só. É idempotente — rodar de novo
+ignora quem já existe e nunca sobrescreve uma senha trocada. Não há cadastro
+público: num CRM corporativo, quem cria conta é o administrador, via
+`POST /api/users`.

@@ -3,6 +3,16 @@
 /* Tailwind v4 is configured in CSS — there is no tailwind.config.js. */
 @theme {
     --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    /* Kikos brand. Available as bg-brand, text-brand, border-brand, ... */
+    --color-brand: #ff4713;
+    --color-brand-hover: #e63c0b;
+
+    /* Dark surfaces used by the auth screens, which are dark-only by design. */
+    --color-surface-base: #0a0a0a;
+    --color-surface-raised: #17171b;
+    --color-surface-sunken: #0b0b0d;
+    --color-surface-border: #2a2a2e;
 }
 
 @layer base {

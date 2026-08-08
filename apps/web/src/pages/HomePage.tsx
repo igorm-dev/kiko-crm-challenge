@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { HealthSchema } from '@kiko/contracts';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from '@/services/api';
 
 export function HomePage() {
     const { data, isPending, error } = useQuery({

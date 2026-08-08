@@ -4,6 +4,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { queryClient } from '@/lib/query-client';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { App } from './App';
 import './styles.css';
 
@@ -17,7 +19,10 @@ createRoot(container).render(
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <AuthProvider>
-                    <App />
+                    <TooltipProvider>
+                        <App />
+                        <Toaster richColors position="bottom-right" />
+                    </TooltipProvider>
                 </AuthProvider>
             </BrowserRouter>
         </QueryClientProvider>

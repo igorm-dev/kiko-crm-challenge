@@ -3,8 +3,9 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LoginSchema } from '@kiko/contracts';
 import { FullPageLoader } from '@/components/FullPageLoader';
 import { KikosLogo } from '@/components/KikosLogo';
-import { Button } from '@/components/ui/Button';
-import { TextField } from '@/components/ui/TextField';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/routes/paths';
 
@@ -96,7 +97,7 @@ export function LoginPage() {
                     />
 
                     <TextField
-                        className="mt-5"
+                        containerClassName="mt-5"
                         label="Senha"
                         type="password"
                         name="password"
@@ -112,13 +113,19 @@ export function LoginPage() {
                     <div className="mt-3 text-right">
                         <Link
                             to={ROUTES.forgotPassword}
-                            className="text-sm text-brand underline underline-offset-4 hover:text-white"
+                            className="text-sm text-primary underline underline-offset-4 hover:text-white"
                         >
                             Esqueceu sua senha?
                         </Link>
                     </div>
 
-                    <Button type="submit" loading={isSubmitting} className="mt-6">
+                    <Button
+                        type="submit"
+                        size="lg"
+                        disabled={isSubmitting}
+                        className="mt-6 h-11 w-full text-[15px]"
+                    >
+                        {isSubmitting && <Loader2 className="animate-spin" />}
                         {isSubmitting ? 'Entrando…' : 'Entrar no CRM'}
                     </Button>
                 </form>
@@ -131,7 +138,9 @@ export function LoginPage() {
 
                 <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
+                    size="lg"
+                    className="h-11 w-full text-[15px]"
                     onClick={() =>
                         setFormError('O login via Google Workspace ainda não está disponível.')
                     }

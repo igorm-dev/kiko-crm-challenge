@@ -22,8 +22,8 @@ export class Lead {
     @Column({ type: 'varchar', length: 255 })
     companyName!: string;
 
-    @Column({ type: 'varchar', length: 255 })
-    roleTitle!: string;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    roleTitle!: string | null;
 
     @Column({ type: 'enum', enum: LeadSource, enumName: 'lead_source' })
     source!: LeadSource;
@@ -47,6 +47,10 @@ export class Lead {
 
     @Column({ type: 'timestamptz', nullable: true })
     lastInteraction!: Date | null;
+
+    @Index('idx_leads_archived_at')
+    @Column({ type: 'timestamptz', nullable: true })
+    archivedAt!: Date | null;
 
     @CreateDateColumn({ type: 'timestamptz' })
     createdAt!: Date;

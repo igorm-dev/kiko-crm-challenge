@@ -4,13 +4,13 @@ Projeto de desafio técnico: um CRM de vendas B2B (leads, negócios, pipeline Ka
 
 ## Stack
 
-| Camada    | Escolha                                                       |
-| --------- | ------------------------------------------------------------- |
-| Monorepo  | pnpm workspaces                                               |
-| Backend   | NestJS 10 + TypeORM + PostgreSQL 16                           |
-| Frontend  | React 18 + Vite + React Router + TanStack Query               |
-| Estilo    | Tailwind CSS 4 (configurado em CSS, sem `tailwind.config.js`) |
-| Contratos | Zod, compartilhado entre backend e frontend                   |
+| Camada    | Escolha                                         |
+| --------- | ----------------------------------------------- |
+| Monorepo  | pnpm workspaces                                 |
+| Backend   | NestJS 10 + TypeORM + PostgreSQL 16             |
+| Frontend  | React 18 + Vite + React Router + TanStack Query |
+| Estilo    | Tailwind CSS 4 + shadcn/ui (Radix)              |
+| Contratos | Zod, compartilhado entre backend e frontend     |
 
 ## Estrutura
 
@@ -25,10 +25,9 @@ packages/
 
 `apps/` são coisas que rodam e fazem deploy. `packages/` são coisas consumidas.
 
-> **Estado atual:** entidades de domínio modeladas e migrations aplicadas.
-> Autenticação e autorização completas no backend e já conectadas à tela de
-> login do frontend. As telas de leads, negócios e pipeline serão adicionadas
-> uma a uma.
+> **Estado atual:** autenticação e autorização completas, e o CRUD de leads
+> (listagem paginada e criação) funcionando de ponta a ponta. Dashboard,
+> negócios e vendedores existem como páginas vazias.
 
 ## Por que um monorepo aqui
 
@@ -208,19 +207,27 @@ Rodar apenas o que mudou vs. `main`: `pnpm --filter '...[origin/main]' test`.
 
 ## API
 
-| Método   | Rota              | Acesso      | Descrição                              |
-| -------- | ----------------- | ----------- | -------------------------------------- |
-| `GET`    | `/api/health`     | público     | status da API e da conexão com o banco |
-| `POST`   | `/api/auth/login` | público     | devolve `{ accessToken, user }`        |
-| `GET`    | `/api/auth/me`    | autenticado | usuário do token, relido do banco      |
-| `GET`    | `/api/users`      | autenticado | lista usuários (para atribuir leads)   |
-| `GET`    | `/api/users/:id`  | autenticado | detalhe de um usuário                  |
-| `POST`   | `/api/users`      | **admin**   | cadastra um usuário                    |
-| `PATCH`  | `/api/users/:id`  | **admin**   | atualiza dados ou senha                |
-| `DELETE` | `/api/users/:id`  | **admin**   | soft delete                            |
+| Método   | Rota                       | Acesso      | Descrição                              |
+| -------- | -------------------------- | ----------- | -------------------------------------- |
+| `GET`    | `/api/health`              | público     | status da API e da conexão com o banco |
+| `POST`   | `/api/auth/login`          | público     | devolve `{ accessToken, user }`        |
+| `GET`    | `/api/auth/me`             | autenticado | usuário do token, relido do banco      |
+| `GET`    | `/api/users`               | autenticado | lista usuários (para atribuir leads)   |
+| `GET`    | `/api/users/:id`           | autenticado | detalhe de um usuário                  |
+| `POST`   | `/api/users`               | **admin**   | cadastra um usuário                    |
+| `PATCH`  | `/api/users/:id`           | **admin**   | atualiza dados ou senha                |
+| `DELETE` | `/api/users/:id`           | **admin**   | soft delete                            |
+| `GET`    | `/api/leads`               | autenticado | lista paginada, com busca e filtro     |
+| `POST`   | `/api/leads`               | autenticado | cadastra um lead                       |
+| `GET`    | `/api/leads/:id`           | autenticado | detalhe de um lead                     |
+| `PATCH`  | `/api/leads/:id`           | autenticado | atualiza um lead (parcial)             |
+| `POST`   | `/api/leads/:id/archive`   | autenticado | arquiva um lead                        |
+| `POST`   | `/api/leads/:id/unarchive` | autenticado | desarquiva um lead                     |
 
-Os endpoints de leads, negócios e comentários serão adicionados conforme cada
-entidade for implementada.
+`GET /api/leads` aceita `page`, `pageSize` (máx. 100), `search` (nome, empresa ou
+e-mail) e `sellerId`, e responde
+`{ items, total, page, pageSize, pageCount }`. Os endpoints de negócios e
+comentários serão adicionados conforme cada entidade for implementada.
 
 ## Autenticação e autorização
 

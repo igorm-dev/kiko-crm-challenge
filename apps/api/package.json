@@ -11,7 +11,9 @@
         "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/infra/database/data-source.ts",
         "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infra/database/data-source.ts",
         "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infra/database/data-source.ts",
-        "db:seed": "ts-node src/infra/database/seeds/seed.ts"
+        "db:seed": "ts-node src/infra/database/seeds/seed.ts",
+        "migration:run:prod": "typeorm migration:run -d dist/infra/database/data-source.js",
+        "db:seed:prod": "node dist/infra/database/seeds/seed.js"
     },
     "dependencies": {
         "@kiko/contracts": "workspace:*",

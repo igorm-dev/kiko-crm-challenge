@@ -1,0 +1,28 @@
+services:
+    - type: web
+      name: kiko-crm-api
+      runtime: node
+      plan: free
+      region: oregon
+      # Corepack instala o pnpm 11 exigido em packageManager. Sem isso o Render
+      # usa a versão que vem na imagem e o install falha no engines check.
+      buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+      # As migrations rodam no start porque preDeployCommand exige plano pago.
+      # migration:run é idempotente: reinício sem migration nova não faz nada.
+      startCommand: pnpm migration:run:prod && pnpm start:api
+      healthCheckPath: /api/health
+      envVars:
+          - key: NODE_VERSION
+            value: 24
+          - key: NODE_ENV
+            value: production
+          - key: DATABASE_URL
+            sync: false
+          - key: DATABASE_SSL
+            value: 'true'
+          - key: JWT_SECRET
+            generateValue: true
+          - key: JWT_EXPIRES_IN
+            value: 8h
+          - key: CORS_ORIGIN
+            sync: false

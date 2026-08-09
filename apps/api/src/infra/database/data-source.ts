@@ -9,10 +9,11 @@ import { SnakeNamingStrategy } from './snake-naming.strategy';
 
 loadEnv();
 
-export function buildDataSourceOptions(databaseUrl: string): DataSourceOptions {
+export function buildDataSourceOptions(databaseUrl: string, ssl = false): DataSourceOptions {
     return {
         type: 'postgres',
         url: databaseUrl,
+        ssl: ssl ? { rejectUnauthorized: true } : false,
         entities: [User, Lead, Deal, Comment],
         migrations: [`${__dirname}/migrations/*.{ts,js}`],
         synchronize: false,
@@ -20,4 +21,6 @@ export function buildDataSourceOptions(databaseUrl: string): DataSourceOptions {
     };
 }
 
-export default new DataSource(buildDataSourceOptions(process.env.DATABASE_URL ?? ''));
+export default new DataSource(
+    buildDataSourceOptions(process.env.DATABASE_URL ?? '', process.env.DATABASE_SSL === 'true'),
+);

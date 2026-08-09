@@ -257,9 +257,75 @@ watch, mas em um clone novo o primeiro build ainda não aconteceu.
 | `pnpm migration:generate <path>` | gera migration a partir das entities           |
 | `pnpm migration:run`             | aplica migrations pendentes                    |
 | `pnpm db:seed`                   | cria os usuários iniciais (idempotente)        |
+| `pnpm start:api`                 | sobe a API a partir do `dist` (produção)       |
+| `pnpm migration:run:prod`        | migrations a partir do `dist`, sem `ts-node`   |
+| `pnpm db:seed:prod`              | seed a partir do `dist`, sem `ts-node`         |
 
 Filtrar um pacote só: `pnpm --filter @kiko/api <script>`.
 Rodar apenas o que mudou vs. `main`: `pnpm --filter '...[origin/main]' test`.
+
+Os três últimos existem porque `migration:run` e `db:seed` rodam via
+`typeorm-ts-node-commonjs` e `ts-node`, que precisam do TypeScript e dos arquivos `.ts`
+em runtime. Um servidor com apenas as dependências de produção não tem nenhum dos dois.
+As versões `:prod` usam o JavaScript já compilado em `apps/api/dist`.
+
+## Deploy
+
+Frontend e backend sobem separados. O `apiFetch` lê `VITE_API_URL` e cai em `/api`
+quando ela não existe, então o desenvolvimento local segue funcionando pelo proxy do
+Vite sem configurar nada.
+
+A SPA num host estático não hiberna: a tela de login aparece instantânea mesmo com a
+API dormindo, e só a primeira requisição espera. Servir tudo pela mesma origem também
+funcionaria — e dispensaria o CORS — mas aí a primeira visita fica olhando tela branca
+enquanto o servidor acorda.
+
+### Backend (Render)
+
+O [`render.yaml`](render.yaml) na raiz descreve o serviço. Ao criar um Blueprint
+apontando para o repositório, o Render lê esse arquivo e só pede as variáveis marcadas
+com `sync: false`:
+
+| Variável       | Valor                                       |
+| -------------- | ------------------------------------------- |
+| `DATABASE_URL` | a connection string do Neon                 |
+| `CORS_ORIGIN`  | a URL pública do frontend, sem barra no fim |
+
+`JWT_SECRET` é gerado pelo próprio Render (`generateValue: true`) — não precisa
+inventar um, e ele não fica no repositório.
+
+Três detalhes que o `render.yaml` resolve e que quebrariam o deploy se ficassem de fora:
+
+- **`corepack enable` no build.** O projeto fixa `pnpm@11.15.1` em `packageManager`, e
+  a imagem do Render traz uma versão mais antiga. Sem o Corepack, o `install` falha no
+  `engines` check antes de compilar qualquer coisa.
+- **Migrations no `startCommand`.** O lugar natural delas seria o `preDeployCommand`,
+  mas ele exige plano pago — e o plano free também não dá acesso a Shell, então não
+  sobraria nenhuma forma de rodá-las pelo Render. Ficam no start, o que é seguro porque
+  `migration:run` é idempotente: um reinício sem migration nova não faz nada.
+- **`DATABASE_SSL=true`.** Banco gerenciado só aceita conexão TLS.
+
+Depois do primeiro deploy, rode o seed uma vez pelo shell do serviço — sem ele não há
+como logar, porque não existe cadastro público:
+
+```bash
+pnpm db:seed:prod
+```
+
+### Frontend (Cloudflare Pages, Vercel ou Netlify)
+
+| Campo         | Valor                                                             |
+| ------------- | ----------------------------------------------------------------- |
+| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
+| Output        | `apps/web/dist`                                                   |
+| Variável      | `VITE_API_URL` = URL da API **incluindo `/api`**                  |
+
+O `VITE_API_URL` é lido em tempo de build, não em runtime: trocar a URL exige um novo
+deploy do frontend.
+
+> O plano gratuito do Render hiberna o serviço após ~15 minutos sem tráfego, e a
+> primeira requisição seguinte leva perto de um minuto. Para uma demonstração, abra o
+> link alguns minutos antes.
 
 ## API
 

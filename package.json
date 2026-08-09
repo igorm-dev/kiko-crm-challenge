@@ -21,7 +21,10 @@
         "db:down": "docker compose down",
         "migration:generate": "pnpm --filter @kiko/api migration:generate",
         "migration:run": "pnpm --filter @kiko/api migration:run",
-        "db:seed": "pnpm --filter @kiko/api db:seed"
+        "db:seed": "pnpm --filter @kiko/api db:seed",
+        "migration:run:prod": "pnpm --filter @kiko/api migration:run:prod",
+        "db:seed:prod": "pnpm --filter @kiko/api db:seed:prod",
+        "start:api": "pnpm --filter @kiko/api start"
     },
     "devDependencies": {
         "prettier": "^3.4.2",

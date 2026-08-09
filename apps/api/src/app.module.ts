@@ -19,7 +19,10 @@ import { UsersModule } from './modules/users/users.module';
         TypeOrmModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService<Env, true>) =>
-                buildDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
+                buildDataSourceOptions(
+                    config.get('DATABASE_URL', { infer: true }),
+                    config.get('DATABASE_SSL', { infer: true }),
+                ),
         }),
         HealthModule,
         AuthModule,

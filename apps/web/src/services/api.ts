@@ -1,7 +1,7 @@
 import type { ZodSchema } from 'zod';
 import { clearToken, getToken } from '@/lib/auth-storage';
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export const UNAUTHORIZED_EVENT = 'kiko:unauthorized';
 

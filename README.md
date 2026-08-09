@@ -2,6 +2,19 @@
 
 Projeto de desafio técnico: um CRM de vendas B2B (leads, negócios, pipeline Kanban) desenvolvido para a operação de equipamentos fitness da Kiko.
 
+## Ambiente online
+
+**https://kiko-crm-challenge.igoribeirom.workers.dev**
+
+| Usuário                      | Senha        | Perfil                           |
+| ---------------------------- | ------------ | -------------------------------- |
+| `rodrigo.ramos@kikos.com.br` | `Senha1234;` | Admin — vê e edita tudo          |
+| `marina.costa@kikos.com.br`  | `Senha1234;` | Vendedora — vê tudo, edita o seu |
+
+> A API roda no plano gratuito do Render, que hiberna o serviço após ~15 minutos sem
+> tráfego. O frontend é estático e abre na hora, então a espera de até um minuto cai no
+> primeiro clique em **Entrar**. Se demorar, é isso — não é erro.
+
 ## Stack
 
 | Camada    | Escolha                                         |
@@ -270,6 +283,14 @@ em runtime. Um servidor com apenas as dependências de produção não tem nenhu
 As versões `:prod` usam o JavaScript já compilado em `apps/api/dist`.
 
 ## Deploy
+
+As três peças estão no ar, cada uma num serviço gratuito:
+
+| Peça     | Onde               | Endereço                                           |
+| -------- | ------------------ | -------------------------------------------------- |
+| Frontend | Cloudflare Workers | https://kiko-crm-challenge.igoribeirom.workers.dev |
+| API      | Render             | https://kiko-crm-api.onrender.com/api              |
+| Banco    | Neon               | PostgreSQL 16, região `sa-east-1`                  |
 
 Frontend e backend sobem separados. O `apiFetch` lê `VITE_API_URL` e cai em `/api`
 quando ela não existe, então o desenvolvimento local segue funcionando pelo proxy do

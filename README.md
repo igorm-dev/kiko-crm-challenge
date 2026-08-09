@@ -312,16 +312,24 @@ como logar, porque não existe cadastro público:
 pnpm db:seed:prod
 ```
 
-### Frontend (Cloudflare Pages, Vercel ou Netlify)
+### Frontend (Cloudflare Workers)
 
-| Campo         | Valor                                                             |
-| ------------- | ----------------------------------------------------------------- |
-| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
-| Output        | `apps/web/dist`                                                   |
-| Variável      | `VITE_API_URL` = URL da API **incluindo `/api`**                  |
+| Campo          | Valor                                                             |
+| -------------- | ----------------------------------------------------------------- |
+| Build command  | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
+| Deploy command | `npx wrangler deploy`                                             |
 
-O `VITE_API_URL` é lido em tempo de build, não em runtime: trocar a URL exige um novo
-deploy do frontend.
+O `wrangler.jsonc` na raiz aponta para `apps/web/dist` e define
+`not_found_handling: "single-page-application"`. Sem isso, dar F5 em `/negocios/123`
+responderia 404 — o host procuraria um arquivo nesse caminho, sem saber que quem
+resolve rotas é o React Router. O `apps/web/public/_redirects` cumpre o mesmo papel em
+hosts que não usam Wrangler (Netlify, Pages clássico).
+
+A URL da API fica em `apps/web/.env.production`, versionado de propósito — a única
+exceção ao `.env.*` do `.gitignore`. O `VITE_API_URL` é lido em tempo de build e acaba
+embutido no bundle JavaScript, então não é segredo em hipótese alguma: é endereço
+público. Versionar dispensa configurar variável no painel e torna o build reproduzível.
+Trocar a URL da API exige um novo deploy do frontend, não só editar um campo.
 
 > O plano gratuito do Render hiberna o serviço após ~15 minutos sem tráfego, e a
 > primeira requisição seguinte leva perto de um minuto. Para uma demonstração, abra o

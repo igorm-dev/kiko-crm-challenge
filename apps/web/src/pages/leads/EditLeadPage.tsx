@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Lead } from '@kiko/contracts';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { usePermissions } from '@/hooks/usePermissions';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { archiveLead, getLead, unarchiveLead, updateLead } from '@/services/leads.service';
@@ -16,6 +17,7 @@ export function EditLeadPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [formError, setFormError] = useState<string | null>(null);
+    const { canManage } = usePermissions();
 
     const lead = useQuery({
         queryKey: ['lead', id],
@@ -48,11 +50,12 @@ export function EditLeadPage() {
     });
 
     const isArchived = lead.data?.archivedAt != null;
+    const isOwner = lead.data ? canManage(lead.data.seller.id) : false;
 
     return (
         <div>
             <PageHeader title="Editar Lead">
-                {lead.data && !isArchived && (
+                {lead.data && isOwner && !isArchived && (
                     <ConfirmDialog
                         title="Arquivar este lead?"
                         description={
@@ -101,7 +104,7 @@ export function EditLeadPage() {
                     </p>
                 )}
 
-                {isArchived && (
+                {isArchived && isOwner && (
                     <div
                         role="status"
                         className="mb-5 flex max-w-3xl flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/50 px-4 py-3"
@@ -129,9 +132,19 @@ export function EditLeadPage() {
                     </div>
                 )}
 
+                {lead.data && !isOwner && (
+                    <p className="mb-5 max-w-3xl rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                        Este lead está sob responsabilidade de{' '}
+                        <span className="font-medium text-foreground">{lead.data.seller.name}</span>
+                        . Você pode consultar os dados, mas só o responsável ou um administrador
+                        pode editar.
+                    </p>
+                )}
+
                 {lead.data && (
                     <LeadForm
                         initialValues={toFormValues(lead.data)}
+                        readOnly={!isOwner}
                         submitLabel="Salvar alterações"
                         isSubmitting={mutation.isPending}
                         formError={formError}
@@ -155,6 +168,7 @@ function toFormValues(lead: Lead): LeadFormValues {
         roleTitle: lead.roleTitle ?? '',
         source: lead.source,
         sellerId: lead.seller.id,
+        sellerName: lead.seller.name,
         observation: lead.observation ?? '',
     };
 }

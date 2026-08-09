@@ -18,6 +18,7 @@ import {
     type Lead,
     type LeadView,
 } from '@kiko/contracts';
+import { AsyncCombobox, COMBOBOX_PAGE_SIZE } from '@/components/AsyncCombobox';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { usePermissions } from '@/hooks/usePermissions';
 import { archiveLead, listLeads, unarchiveLead } from '@/services/leads.service';
 import { listUsers } from '@/services/users.service';
 import { editLeadPath, ROUTES } from '@/routes/paths';
@@ -54,11 +56,7 @@ export function LeadsPage() {
 
     const debouncedSearch = useDebouncedValue(search, 350);
     const queryClient = useQueryClient();
-
-    const sellers = useQuery({
-        queryKey: ['users', 'picker'],
-        queryFn: () => listUsers({ pageSize: 100 }),
-    });
+    const { canManage } = usePermissions();
 
     const leads = useQuery({
         queryKey: ['leads', { page, search: debouncedSearch, sellerId, view }],
@@ -126,19 +124,21 @@ export function LeadsPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-8 py-4">
                 <div className="flex flex-wrap items-center gap-3">
-                    <Select value={sellerId} onValueChange={resetToFirstPage(setSellerId)}>
-                        <SelectTrigger className="h-9 w-56" aria-label="Filtrar por vendedor">
-                            <SelectValue placeholder="Vendedor: Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL_SELLERS}>Vendedor: Todos</SelectItem>
-                            {sellers.data?.items.map((seller) => (
-                                <SelectItem key={seller.id} value={seller.id}>
-                                    {seller.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <AsyncCombobox
+                        value={sellerId}
+                        onValueChange={resetToFirstPage(setSellerId)}
+                        queryKey={['users', 'combobox', 'filter']}
+                        fetchPage={(search, page) =>
+                            listUsers({ search, page, pageSize: COMBOBOX_PAGE_SIZE })
+                        }
+                        getOptionValue={(seller) => seller.id}
+                        getOptionLabel={(seller) => seller.name}
+                        placeholder="Vendedor: Todos"
+                        searchPlaceholder="Buscar vendedor..."
+                        emptyMessage="Nenhum vendedor encontrado."
+                        allOption={{ value: ALL_SELLERS, label: 'Vendedor: Todos' }}
+                        className="h-9 w-56"
+                    />
 
                     <Select
                         value={view}
@@ -236,6 +236,7 @@ export function LeadsPage() {
                                     <LeadRow
                                         key={lead.id}
                                         lead={lead}
+                                        canManage={canManage(lead.seller.id)}
                                         isBusy={archiving.isPending}
                                         onToggleArchive={() =>
                                             archiving.mutate({
@@ -290,11 +291,12 @@ export function LeadsPage() {
 
 interface LeadRowProps {
     lead: Lead;
+    canManage: boolean;
     isBusy: boolean;
     onToggleArchive: () => void;
 }
 
-function LeadRow({ lead, isBusy, onToggleArchive }: LeadRowProps) {
+function LeadRow({ lead, canManage, isBusy, onToggleArchive }: LeadRowProps) {
     const isArchived = lead.archivedAt !== null;
 
     return (
@@ -320,7 +322,7 @@ function LeadRow({ lead, isBusy, onToggleArchive }: LeadRowProps) {
                 {lead.lastInteraction ? formatDateTime(lead.lastInteraction) : '—'}
             </TableCell>
             <TableCell className="text-right">
-                {isArchived ? (
+                {!canManage ? null : isArchived ? (
                     <Button
                         variant="ghost"
                         size="icon-sm"

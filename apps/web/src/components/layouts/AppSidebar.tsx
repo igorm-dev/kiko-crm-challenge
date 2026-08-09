@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Briefcase, LayoutGrid, LogOut, Users, UserSquare } from 'lucide-react';
+import { Briefcase, LogOut, SquareKanban, Users, UserSquare } from 'lucide-react';
 import { KikosLogo } from '@/components/KikosLogo';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/routes/paths';
 
 const NAV_ITEMS = [
-    { to: ROUTES.dashboard, label: 'Dashboard', icon: LayoutGrid },
+    { to: ROUTES.board, label: 'Board', icon: SquareKanban },
     { to: ROUTES.leads, label: 'Leads', icon: Users },
     { to: ROUTES.deals, label: 'Negócios', icon: Briefcase },
     { to: ROUTES.sellers, label: 'Vendedores', icon: UserSquare },

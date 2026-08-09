@@ -27,8 +27,9 @@ packages/
 
 > **Estado atual:** autenticação e autorização completas; leads com listagem
 > paginada, criação, edição e arquivamento; vendedores com listagem, criação,
-> edição, habilitar/desabilitar e senha gerada pelo sistema. Dashboard e
-> negócios existem como páginas vazias.
+> edição, habilitar/desabilitar e senha gerada pelo sistema; e
+> negócios com pipeline Kanban (arrastar entre colunas, painel de detalhes e
+> comentários) na tela **Board**. A aba Negócios traz a listagem completa e a página de detalhes de cada negócio.
 
 ## Por que um monorepo aqui
 
@@ -227,8 +228,7 @@ Rodar apenas o que mudou vs. `main`: `pnpm --filter '...[origin/main]' test`.
 
 `GET /api/leads` aceita `page`, `pageSize` (máx. 100), `search` (nome, empresa ou
 e-mail) e `sellerId`, e responde
-`{ items, total, page, pageSize, pageCount }`. Os endpoints de negócios e
-comentários serão adicionados conforme cada entidade for implementada.
+`{ items, total, page, pageSize, pageCount }`.
 
 ## Autenticação e autorização
 

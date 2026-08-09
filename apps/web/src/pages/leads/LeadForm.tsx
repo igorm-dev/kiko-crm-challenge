@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import {
     CreateLeadSchema,
@@ -20,6 +19,8 @@ import {
 } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { Textarea } from '@/components/ui/textarea';
+import { AsyncCombobox, COMBOBOX_PAGE_SIZE } from '@/components/AsyncCombobox';
+import { usePermissions } from '@/hooks/usePermissions';
 import { listUsers } from '@/services/users.service';
 import { ROUTES } from '@/routes/paths';
 
@@ -31,6 +32,7 @@ export interface LeadFormValues {
     roleTitle: string;
     source: string;
     sellerId: string;
+    sellerName: string;
     observation: string;
 }
 
@@ -42,12 +44,14 @@ export const EMPTY_LEAD_FORM: LeadFormValues = {
     roleTitle: '',
     source: '',
     sellerId: '',
+    sellerName: '',
     observation: '',
 };
 
 type FieldErrors = Partial<Record<keyof LeadFormValues, string>>;
 
 interface LeadFormProps {
+    readOnly?: boolean;
     initialValues: LeadFormValues;
     submitLabel: string;
     isSubmitting: boolean;
@@ -61,25 +65,24 @@ export function LeadForm({
     isSubmitting,
     formError,
     onSubmit,
+    readOnly = false,
 }: LeadFormProps) {
     const navigate = useNavigate();
+    const { isAdmin, actor } = usePermissions();
 
     const [form, setForm] = useState(initialValues);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-    const sellers = useQuery({
-        queryKey: ['users', 'picker'],
-        queryFn: () => listUsers({ pageSize: 100 }),
-    });
 
     function update(field: keyof LeadFormValues) {
         return (value: string) => setForm((current) => ({ ...current, [field]: value }));
     }
 
+    const effectiveSellerId = isAdmin ? form.sellerId : (actor?.id ?? form.sellerId);
+
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        const parsed = CreateLeadSchema.safeParse(form);
+        const parsed = CreateLeadSchema.safeParse({ ...form, sellerId: effectiveSellerId });
 
         if (!parsed.success) {
             const flattened = parsed.error.flatten().fieldErrors;
@@ -120,7 +123,7 @@ export function LeadForm({
                             value={form.name}
                             onChange={(event) => update('name')(event.currentTarget.value)}
                             error={fieldErrors.name}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
 
                         <TextField
@@ -130,7 +133,7 @@ export function LeadForm({
                             value={form.companyName}
                             onChange={(event) => update('companyName')(event.currentTarget.value)}
                             error={fieldErrors.companyName}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
 
                         <TextField
@@ -141,7 +144,7 @@ export function LeadForm({
                             value={form.email}
                             onChange={(event) => update('email')(event.currentTarget.value)}
                             error={fieldErrors.email}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
 
                         <TextField
@@ -151,7 +154,7 @@ export function LeadForm({
                             value={form.phone}
                             onChange={(event) => update('phone')(event.currentTarget.value)}
                             error={fieldErrors.phone}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
 
                         <TextField
@@ -160,7 +163,7 @@ export function LeadForm({
                             value={form.roleTitle}
                             onChange={(event) => update('roleTitle')(event.currentTarget.value)}
                             error={fieldErrors.roleTitle}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
 
                         <SelectField
@@ -170,7 +173,7 @@ export function LeadForm({
                             value={form.source}
                             onValueChange={update('source')}
                             error={fieldErrors.source}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                             options={Object.values(LeadSource).map((source) => ({
                                 value: source,
                                 label: LEAD_SOURCE_LABELS[source],
@@ -178,19 +181,35 @@ export function LeadForm({
                         />
                     </div>
 
-                    <SelectField
-                        label="Vendedor Responsável"
-                        required
-                        placeholder="Atribuir a um vendedor"
-                        value={form.sellerId}
-                        onValueChange={update('sellerId')}
-                        error={fieldErrors.sellerId}
-                        disabled={isSubmitting || sellers.isPending}
-                        options={(sellers.data?.items ?? []).map((seller) => ({
-                            value: seller.id,
-                            label: seller.name,
-                        }))}
-                    />
+                    <div className="grid gap-2">
+                        <Label>
+                            Vendedor Responsável
+                            <span className="text-primary" aria-hidden="true">
+                                *
+                            </span>
+                        </Label>
+
+                        <AsyncCombobox
+                            value={effectiveSellerId}
+                            onValueChange={update('sellerId')}
+                            queryKey={['users', 'combobox', 'seller']}
+                            fetchPage={(search, page) =>
+                                listUsers({ search, page, pageSize: COMBOBOX_PAGE_SIZE })
+                            }
+                            getOptionValue={(seller) => seller.id}
+                            getOptionLabel={(seller) => seller.name}
+                            placeholder="Atribuir a um vendedor"
+                            searchPlaceholder="Buscar vendedor..."
+                            emptyMessage="Nenhum vendedor encontrado."
+                            selectedLabel={form.sellerName || undefined}
+                            invalid={fieldErrors.sellerId !== undefined}
+                            disabled={isSubmitting || readOnly || !isAdmin}
+                        />
+
+                        {fieldErrors.sellerId && (
+                            <p className="text-xs text-destructive">{fieldErrors.sellerId}</p>
+                        )}
+                    </div>
 
                     <div className="grid gap-2">
                         <Label htmlFor="observation">Observações e Histórico Preliminar</Label>
@@ -200,7 +219,7 @@ export function LeadForm({
                             placeholder="Ex: Cliente demonstrou interesse inicial em esteiras profissionais…"
                             value={form.observation}
                             onChange={(event) => update('observation')(event.currentTarget.value)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || readOnly}
                         />
                     </div>
 
@@ -213,13 +232,20 @@ export function LeadForm({
                             disabled={isSubmitting}
                             onClick={() => navigate(ROUTES.leads)}
                         >
-                            Cancelar
+                            {readOnly ? 'Voltar' : 'Cancelar'}
                         </Button>
 
-                        <Button type="submit" size="lg" className="h-10" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="animate-spin" />}
-                            {submitLabel}
-                        </Button>
+                        {!readOnly && (
+                            <Button
+                                type="submit"
+                                size="lg"
+                                className="h-10"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting && <Loader2 className="animate-spin" />}
+                                {submitLabel}
+                            </Button>
+                        )}
                     </div>
                 </form>
             </CardContent>

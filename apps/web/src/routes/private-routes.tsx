@@ -1,7 +1,10 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 import { AppLayout } from '@/components/layouts/AppLayout';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { DealsPage } from '@/pages/DealsPage';
+
+import { BoardPage } from '@/pages/deals/BoardPage';
+import { NewDealPage } from '@/pages/deals/NewDealPage';
+import { DealDetailPage } from '@/pages/deals/DealDetailPage';
+import { DealsListPage } from '@/pages/deals/DealsListPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { EditSellerPage } from '@/pages/sellers/EditSellerPage';
 import { NewSellerPage } from '@/pages/sellers/NewSellerPage';
@@ -21,11 +24,13 @@ export const privateRoutes: RouteObject[] = [
                 element: <AppLayout />,
                 children: [
                     { path: ROUTES.home, element: <Navigate to={ROUTES.leads} replace /> },
-                    { path: ROUTES.dashboard, element: <DashboardPage /> },
+                    { path: ROUTES.board, element: <BoardPage /> },
                     { path: ROUTES.leads, element: <LeadsPage /> },
                     { path: ROUTES.newLead, element: <NewLeadPage /> },
                     { path: ROUTES.editLead, element: <EditLeadPage /> },
-                    { path: ROUTES.deals, element: <DealsPage /> },
+                    { path: ROUTES.deals, element: <DealsListPage /> },
+                    { path: ROUTES.newDeal, element: <NewDealPage /> },
+                    { path: ROUTES.dealDetail, element: <DealDetailPage /> },
                     { path: ROUTES.sellers, element: <SellersPage /> },
                     {
                         element: <RequireAdmin />,

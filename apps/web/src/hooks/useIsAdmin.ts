@@ -1,8 +1,5 @@
-import { UserRole } from '@kiko/contracts';
-import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function useIsAdmin(): boolean {
-    const { user } = useAuth();
-
-    return user?.role === UserRole.Admin;
+    return usePermissions().isAdmin;
 }

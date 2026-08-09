@@ -6,8 +6,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
-import type { CreateLeadInput, LeadListQuery, Paginated, UpdateLeadInput } from '@kiko/contracts';
+import type {
+    CreateLeadInput,
+    LeadListQuery,
+    Paginated,
+    PermissionActor,
+    UpdateLeadInput,
+} from '@kiko/contracts';
 import { User } from '../users/user.entity';
+import { assertCanAssign, assertCanManage, resolveOwnerId } from '../../shared/ownership';
 import { Lead } from './lead.entity';
 
 @Injectable()
@@ -86,16 +93,26 @@ export class LeadsService {
         return lead;
     }
 
-    async create(input: CreateLeadInput): Promise<Lead> {
-        await this.assertSellerExists(input.sellerId);
+    async create(input: CreateLeadInput, actor: PermissionActor): Promise<Lead> {
+        const sellerId = resolveOwnerId(actor, input.sellerId);
+        await this.assertSellerExists(sellerId);
 
-        const saved = await this.leadsRepository.save(this.leadsRepository.create(input));
+        const saved = await this.leadsRepository.save(
+            this.leadsRepository.create({ ...input, sellerId }),
+        );
 
         return this.findById(saved.id);
     }
 
-    async update(id: string, input: UpdateLeadInput): Promise<Lead> {
-        await this.findById(id);
+    async update(id: string, input: UpdateLeadInput, actor: PermissionActor): Promise<Lead> {
+        const lead = await this.findById(id);
+
+        assertCanManage(
+            actor,
+            lead.sellerId,
+            'Você só pode editar leads sob a sua responsabilidade.',
+        );
+        assertCanAssign(actor, input.sellerId);
 
         if (input.sellerId) {
             await this.assertSellerExists(input.sellerId);
@@ -106,8 +123,14 @@ export class LeadsService {
         return this.findById(id);
     }
 
-    async archive(id: string): Promise<Lead> {
+    async archive(id: string, actor: PermissionActor): Promise<Lead> {
         const lead = await this.findById(id);
+
+        assertCanManage(
+            actor,
+            lead.sellerId,
+            'Você só pode arquivar leads sob a sua responsabilidade.',
+        );
 
         if (lead.archivedAt) {
             throw new ConflictException('Este lead já está arquivado.');
@@ -118,8 +141,14 @@ export class LeadsService {
         return this.findById(id);
     }
 
-    async unarchive(id: string): Promise<Lead> {
+    async unarchive(id: string, actor: PermissionActor): Promise<Lead> {
         const lead = await this.findById(id);
+
+        assertCanManage(
+            actor,
+            lead.sellerId,
+            'Você só pode desarquivar leads sob a sua responsabilidade.',
+        );
 
         if (!lead.archivedAt) {
             throw new ConflictException('Este lead não está arquivado.');

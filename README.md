@@ -25,9 +25,10 @@ packages/
 
 `apps/` são coisas que rodam e fazem deploy. `packages/` são coisas consumidas.
 
-> **Estado atual:** autenticação e autorização completas, e o CRUD de leads
-> (listagem paginada e criação) funcionando de ponta a ponta. Dashboard,
-> negócios e vendedores existem como páginas vazias.
+> **Estado atual:** autenticação e autorização completas; leads com listagem
+> paginada, criação, edição e arquivamento; vendedores com listagem, criação,
+> edição, habilitar/desabilitar e senha gerada pelo sistema. Dashboard e
+> negócios existem como páginas vazias.
 
 ## Por que um monorepo aqui
 

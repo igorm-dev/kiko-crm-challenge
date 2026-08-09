@@ -29,6 +29,10 @@ export class User {
     @Column({ type: 'varchar', length: 255 })
     jobTitle!: string;
 
+    @Index('idx_users_disabled_at')
+    @Column({ type: 'timestamptz', nullable: true })
+    disabledAt!: Date | null;
+
     @CreateDateColumn({ type: 'timestamptz' })
     createdAt!: Date;
 

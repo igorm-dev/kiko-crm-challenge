@@ -1,6 +1,8 @@
 import { UserRole, type CreateUserInput } from '@kiko/contracts';
 
-export const USER_SEEDS: CreateUserInput[] = [
+export type UserSeed = CreateUserInput & { password: string };
+
+export const USER_SEEDS: UserSeed[] = [
     {
         name: 'Rodrigo Ramos',
         email: 'rodrigo.ramos@kikos.com.br',

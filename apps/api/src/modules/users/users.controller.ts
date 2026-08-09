@@ -10,16 +10,22 @@ import {
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
 } from '@nestjs/common';
 import {
     CreateUserSchema,
+    GeneratedPasswordSchema,
+    PaginatedUsersSchema,
     UpdateUserSchema,
-    UserListSchema,
+    UserListQuerySchema,
     UserRole,
     UserSchema,
     type CreateUserInput,
+    type GeneratedPassword,
+    type PaginatedUsers,
     type UpdateUserInput,
     type User,
+    type UserListQuery,
 } from '@kiko/contracts';
 import { ZodValidationPipe } from '../../shared/pipes/zod-validation.pipe';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -32,8 +38,10 @@ export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
     @Get()
-    async findAll(): Promise<User[]> {
-        return UserListSchema.parse(await this.usersService.findAll());
+    async findAll(
+        @Query(new ZodValidationPipe(UserListQuerySchema)) query: UserListQuery,
+    ): Promise<PaginatedUsers> {
+        return PaginatedUsersSchema.parse(await this.usersService.findAll(query));
     }
 
     @Get(':id')
@@ -45,8 +53,8 @@ export class UsersController {
     @Roles(UserRole.Admin)
     async create(
         @Body(new ZodValidationPipe(CreateUserSchema)) input: CreateUserInput,
-    ): Promise<User> {
-        return UserSchema.parse(await this.usersService.create(input));
+    ): Promise<GeneratedPassword> {
+        return GeneratedPasswordSchema.parse(await this.usersService.create(input));
     }
 
     @Patch(':id')
@@ -56,6 +64,34 @@ export class UsersController {
         @Body(new ZodValidationPipe(UpdateUserSchema)) input: UpdateUserInput,
     ): Promise<User> {
         return UserSchema.parse(await this.usersService.update(id, input));
+    }
+
+    @Post(':id/reset-password')
+    @Roles(UserRole.Admin)
+    @HttpCode(HttpStatus.OK)
+    async resetPassword(@Param('id', ParseUUIDPipe) id: string): Promise<GeneratedPassword> {
+        return GeneratedPasswordSchema.parse(await this.usersService.resetPassword(id));
+    }
+
+    @Post(':id/disable')
+    @Roles(UserRole.Admin)
+    @HttpCode(HttpStatus.OK)
+    async disable(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() currentUser: JwtPayload,
+    ): Promise<User> {
+        if (id === currentUser.sub) {
+            throw new ForbiddenException('Você não pode desabilitar o próprio usuário.');
+        }
+
+        return UserSchema.parse(await this.usersService.disable(id));
+    }
+
+    @Post(':id/enable')
+    @Roles(UserRole.Admin)
+    @HttpCode(HttpStatus.OK)
+    async enable(@Param('id', ParseUUIDPipe) id: string): Promise<User> {
+        return UserSchema.parse(await this.usersService.enable(id));
     }
 
     @Delete(':id')

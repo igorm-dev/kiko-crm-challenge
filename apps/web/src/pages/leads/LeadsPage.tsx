@@ -55,7 +55,10 @@ export function LeadsPage() {
     const debouncedSearch = useDebouncedValue(search, 350);
     const queryClient = useQueryClient();
 
-    const sellers = useQuery({ queryKey: ['users'], queryFn: listUsers });
+    const sellers = useQuery({
+        queryKey: ['users', 'picker'],
+        queryFn: () => listUsers({ pageSize: 100 }),
+    });
 
     const leads = useQuery({
         queryKey: ['leads', { page, search: debouncedSearch, sellerId, view }],
@@ -129,7 +132,7 @@ export function LeadsPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value={ALL_SELLERS}>Vendedor: Todos</SelectItem>
-                            {sellers.data?.map((seller) => (
+                            {sellers.data?.items.map((seller) => (
                                 <SelectItem key={seller.id} value={seller.id}>
                                     {seller.name}
                                 </SelectItem>

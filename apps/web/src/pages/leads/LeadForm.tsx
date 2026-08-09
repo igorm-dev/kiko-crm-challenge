@@ -67,7 +67,10 @@ export function LeadForm({
     const [form, setForm] = useState(initialValues);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-    const sellers = useQuery({ queryKey: ['users'], queryFn: listUsers });
+    const sellers = useQuery({
+        queryKey: ['users', 'picker'],
+        queryFn: () => listUsers({ pageSize: 100 }),
+    });
 
     function update(field: keyof LeadFormValues) {
         return (value: string) => setForm((current) => ({ ...current, [field]: value }));
@@ -183,7 +186,7 @@ export function LeadForm({
                         onValueChange={update('sellerId')}
                         error={fieldErrors.sellerId}
                         disabled={isSubmitting || sellers.isPending}
-                        options={(sellers.data ?? []).map((seller) => ({
+                        options={(sellers.data?.items ?? []).map((seller) => ({
                             value: seller.id,
                             label: seller.name,
                         }))}

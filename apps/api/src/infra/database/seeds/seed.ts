@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import { CreateUserSchema } from '@kiko/contracts';
+import { CreateUserSchema, PasswordSchema } from '@kiko/contracts';
 import { User } from '../../../modules/users/user.entity';
 import dataSource from '../data-source';
 import { USER_SEEDS } from './data/users.seed';
@@ -14,7 +14,7 @@ const BCRYPT_ROUNDS = 12;
 async function seedUsers(): Promise<void> {
     const users = dataSource.getRepository(User);
 
-    const seeds = z.array(CreateUserSchema).parse(USER_SEEDS);
+    const seeds = z.array(CreateUserSchema.extend({ password: PasswordSchema })).parse(USER_SEEDS);
 
     for (const { password, ...account } of seeds) {
         const existing = await users.findOne({ where: { email: account.email } });

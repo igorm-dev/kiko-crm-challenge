@@ -28,6 +28,12 @@ export class AuthService {
             throw new UnauthorizedException('E-mail ou senha incorretos.');
         }
 
+        if (user.disabledAt) {
+            throw new UnauthorizedException(
+                'Este acesso está desabilitado. Fale com o administrador do CRM.',
+            );
+        }
+
         const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
 
         return LoginResponseSchema.parse({

@@ -1,11 +1,17 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { hash } from 'bcryptjs';
-import type { CreateUserInput, UpdateUserInput } from '@kiko/contracts';
+import type { CreateUserInput, Paginated, UpdateUserInput, UserListQuery } from '@kiko/contracts';
+import { generatePassword } from './password.generator';
 import { User } from './user.entity';
 
 const BCRYPT_ROUNDS = 12;
+
+export interface UserWithPassword {
+    user: User;
+    generatedPassword: string;
+}
 
 @Injectable()
 export class UsersService {
@@ -14,8 +20,37 @@ export class UsersService {
         private readonly usersRepository: Repository<User>,
     ) {}
 
-    findAll(): Promise<User[]> {
-        return this.usersRepository.find({ order: { name: 'ASC' } });
+    async findAll({ page, pageSize, search, role, view }: UserListQuery): Promise<Paginated<User>> {
+        const query = this.usersRepository
+            .createQueryBuilder('user')
+            .orderBy('user.name', 'ASC')
+            .skip((page - 1) * pageSize)
+            .take(pageSize);
+
+        if (role) {
+            query.andWhere('user.role = :role', { role });
+        }
+
+        if (view === 'active') {
+            query.andWhere('user.disabledAt IS NULL');
+        }
+
+        if (view === 'disabled') {
+            query.andWhere('user.disabledAt IS NOT NULL');
+        }
+
+        if (search) {
+            query.andWhere(
+                new Brackets((where) => {
+                    where.where('user.name ILIKE :search').orWhere('user.email ILIKE :search');
+                }),
+                { search: `%${search}%` },
+            );
+        }
+
+        const [items, total] = await query.getManyAndCount();
+
+        return { items, total, page, pageSize, pageCount: Math.ceil(total / pageSize) };
     }
 
     async findById(id: string): Promise<User> {
@@ -37,24 +72,25 @@ export class UsersService {
                 email: true,
                 role: true,
                 jobTitle: true,
+                disabledAt: true,
                 createdAt: true,
                 passwordHash: true,
             },
         });
     }
 
-    async create(input: CreateUserInput): Promise<User> {
+    async create(input: CreateUserInput): Promise<UserWithPassword> {
         await this.assertEmailIsFree(input.email);
 
-        const { password, ...rest } = input;
-        const user = this.usersRepository.create({
-            ...rest,
-            passwordHash: await hash(password, BCRYPT_ROUNDS),
-        });
+        const generatedPassword = generatePassword();
+        const saved = await this.usersRepository.save(
+            this.usersRepository.create({
+                ...input,
+                passwordHash: await hash(generatedPassword, BCRYPT_ROUNDS),
+            }),
+        );
 
-        const saved = await this.usersRepository.save(user);
-
-        return this.findById(saved.id);
+        return { user: await this.findById(saved.id), generatedPassword };
     }
 
     async update(id: string, input: UpdateUserInput): Promise<User> {
@@ -64,11 +100,42 @@ export class UsersService {
             await this.assertEmailIsFree(input.email);
         }
 
-        const { password, ...rest } = input;
+        await this.usersRepository.update(id, input);
+
+        return this.findById(id);
+    }
+
+    async resetPassword(id: string): Promise<UserWithPassword> {
+        await this.findById(id);
+
+        const generatedPassword = generatePassword();
         await this.usersRepository.update(id, {
-            ...rest,
-            ...(password ? { passwordHash: await hash(password, BCRYPT_ROUNDS) } : {}),
+            passwordHash: await hash(generatedPassword, BCRYPT_ROUNDS),
         });
+
+        return { user: await this.findById(id), generatedPassword };
+    }
+
+    async disable(id: string): Promise<User> {
+        const user = await this.findById(id);
+
+        if (user.disabledAt) {
+            throw new ConflictException('Este usuário já está desabilitado.');
+        }
+
+        await this.usersRepository.update(id, { disabledAt: new Date() });
+
+        return this.findById(id);
+    }
+
+    async enable(id: string): Promise<User> {
+        const user = await this.findById(id);
+
+        if (!user.disabledAt) {
+            throw new ConflictException('Este usuário já está habilitado.');
+        }
+
+        await this.usersRepository.update(id, { disabledAt: null });
 
         return this.findById(id);
     }

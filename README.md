@@ -322,8 +322,11 @@ pnpm db:seed:prod
 O `wrangler.jsonc` na raiz aponta para `apps/web/dist` e define
 `not_found_handling: "single-page-application"`. Sem isso, dar F5 em `/negocios/123`
 responderia 404 — o host procuraria um arquivo nesse caminho, sem saber que quem
-resolve rotas é o React Router. O `apps/web/public/_redirects` cumpre o mesmo papel em
-hosts que não usam Wrangler (Netlify, Pages clássico).
+resolve rotas é o React Router.
+
+Em Netlify ou no Pages clássico, o equivalente seria um arquivo `_redirects` com
+`/* /index.html 200`. Não use os dois: o Workers também lê o `_redirects` do diretório
+de assets e rejeita essa regra como loop infinito, porque `/index.html` casa com `/*`.
 
 A URL da API fica em `apps/web/.env.production`, versionado de propósito — a única
 exceção ao `.env.*` do `.gitignore`. O `VITE_API_URL` é lido em tempo de build e acaba
